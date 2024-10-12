@@ -5,7 +5,7 @@ import TileLayer from "ol/layer/Tile";
 import OSM from "ol/source/OSM";
 import { fromLonLat } from "ol/proj";
 
-const MapComponent = () => {
+const Home = () => {
   const mapRef = useRef(null); // Map üçün referans yaradılır
   const mapInstance = useRef(null); // Xəritə instance-ni saxlamaq üçün
 
@@ -74,4 +74,4 @@ const MapComponent = () => {
   );
 };
 
-export default MapComponent;
+export default Home;
