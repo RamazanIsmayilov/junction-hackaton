@@ -1,17 +1,24 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "ol/ol.css";
 import { Map, View } from "ol";
 import TileLayer from "ol/layer/Tile";
 import OSM from "ol/source/OSM";
 import { fromLonLat } from "ol/proj";
+import { useNavigate } from "react-router-dom";
 
 const Home = () => {
-  const mapRef = useRef(null); // Map üçün referans yaradılır
-  const mapInstance = useRef(null); // Xəritə instance-ni saxlamaq üçün
+  const mapRef = useRef(null);
+  const mapInstance = useRef(null);
+  const [search, setSearch] = useState("");
+  const navigate = useNavigate();
+
+  const handleSubmit = () => {
+    console.log(search);
+    navigate("search");
+  };
 
   useEffect(() => {
     if (!mapInstance.current) {
-      // Yalnız bir dəfə xəritə yaradırıq
       mapInstance.current = new Map({
         target: mapRef.current,
         layers: [
@@ -20,7 +27,7 @@ const Home = () => {
           }),
         ],
         view: new View({
-          center: fromLonLat([49.8671, 40.4093]), // Bakı koordinatları
+          center: fromLonLat([49.8671, 40.4093]),
           zoom: 6,
         }),
       });
@@ -61,13 +68,20 @@ const Home = () => {
           zIndex: 2,
         }}
       >
-        <h1 className="text-black text-5xl">GreenWave Baku</h1>
-        <form className="mt-5">
+        <h1 className="text-white text-6xl font-bold drop-shadow-md text-center tracking-[0.1em]">
+          GreenWave
+        </h1>
+        <form onSubmit={handleSubmit} className="mt-5 flex items-center">
           <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             type="text"
-            className="w-full h-12 bg-transparent border border-gray-300 rounded-lg p-2 focus:outline-none"
+            className="w-full h-12 bg-transparent border border-gray-300 rounded-l-lg p-2 focus:outline-none"
             placeholder="Search Here"
           />
+          <button className="h-12 bg-purple-500 text-white rounded-r-lg px-4 hover:bg-purple-600 transition-colors duration-200">
+            Search
+          </button>
         </form>
       </div>
     </div>
