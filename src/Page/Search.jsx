@@ -49,6 +49,11 @@ const Search = () => {
   };
 
   const calculateHeatIndex = (temp, humidity) => {
+    if (temp === undefined || humidity === undefined) {
+      console.error("Temperature or humidity is undefined");
+      return { heatIndexF: 0, heatIndexC: 0 };
+    }
+
     const T = (temp * 9) / 5 + 32;
     const RH = humidity;
 
@@ -64,7 +69,11 @@ const Search = () => {
       1.99e-6 * T * T * RH * RH;
 
     const heatIndexC = ((heatIndexF - 32) * 5) / 9;
-    return heatIndexC.toFixed(2);
+
+    return {
+      heatIndexF: heatIndexF.toFixed(2),
+      heatIndexC: heatIndexC.toFixed(2),
+    };
   };
 
   useEffect(() => {
@@ -93,10 +102,11 @@ const Search = () => {
       case "Temperature":
         return `${weatherData ? weatherData.main.temp.toFixed(1) : 0} °C`;
       case "Heat Index":
-        return `${calculateHeatIndex(
+        const { heatIndexC } = calculateHeatIndex(
           weatherData.main.temp,
           weatherData.main.humidity
-        )} °C`;
+        );
+        return `${heatIndexC} °C`;
       case "Wind Speed":
         return `${weatherData ? weatherData.wind.speed.toFixed(1) : 0} m/s`;
       case "Humidity":
@@ -105,6 +115,10 @@ const Search = () => {
         return "0 °C";
     }
   };
+
+  const heatIndexData = weatherData
+    ? calculateHeatIndex(weatherData.main.temp, weatherData.main.humidity)
+    : { heatIndexF: 0 };
 
   return (
     <div className="mx-auto flex">
@@ -181,10 +195,23 @@ const Search = () => {
           </div>
         </div>
         {weatherData && (
-          <div className="mt-5 text-black">
-            <h2 className="text-xl font-medium">
-              Location: {weatherData.name}, {weatherData.sys.country}
-            </h2>
+          <div>
+            <div className="mt-5 text-black">
+              <h2 className="text-xl font-medium">
+                Location: {weatherData.name}, {weatherData.sys.country}
+              </h2>
+            </div>
+            <div
+              className={`notifiaction mt-5 ${
+                heatIndexData.heatIndexC > 20
+                  ? "bg-red-200 border-red-600 text-red-600"
+                  : "bg-green-200 border-green-600 text-green-600"
+              } border rounded p-4`}
+            >
+              {heatIndexData.heatIndexC > 20
+                ? "Warning! The temperature in the greenhouse is too high for the plants, please take action."
+                : "Great! The greenhouse conditions are currently ideal for the plants"}
+            </div>
           </div>
         )}
       </section>
