@@ -1,13 +1,71 @@
-import Map from 'ol/Map'; // Add this import for Map
-import { View } from 'ol';
-import TileLayer from 'ol/layer/Tile';
-import { fromLonLat } from 'ol/proj';
-import { OSM } from 'ol/source';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
+import Map from "ol/Map";
+import { View } from "ol";
+import TileLayer from "ol/layer/Tile";
+import { fromLonLat } from "ol/proj";
+import { OSM } from "ol/source";
 
 const Search = () => {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
+  const location = useLocation();
+  const [query, setQuery] = useState("");
+  const [weatherData, setWeatherData] = useState(null);
+  const [coordinates, setCoordinates] = useState([49.8671, 40.4093]);
+  const [selectedFilter, setSelectedFilter] = useState("Temperature");
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const queryParam = searchParams.get("query");
+    if (queryParam) {
+      setQuery(queryParam);
+      fetchWeatherAndCoordinates(queryParam);
+    }
+  }, [location]);
+
+  const fetchWeatherAndCoordinates = async (city) => {
+    try {
+      const apiKey = "00580b0ee6169bdb85569e16d6e3e7c5";
+
+      const geoResponse = await fetch(
+        `http://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${apiKey}`
+      );
+      const geoData = await geoResponse.json();
+      const { lat, lon } = geoData[0];
+      setCoordinates([lon, lat]);
+
+      const weatherResponse = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`
+      );
+      const weather = await weatherResponse.json();
+      setWeatherData(weather);
+
+      mapInstance.current.getView().setCenter(fromLonLat([lon, lat]));
+      mapInstance.current.getView().setZoom(10);
+    } catch (error) {
+      console.error("Error fetching weather or coordinates", error);
+    }
+  };
+
+  const calculateHeatIndex = (temp, humidity) => {
+    const T = (temp * 9) / 5 + 32;
+    const RH = humidity;
+
+    const heatIndexF =
+      -42.379 +
+      2.04901523 * T +
+      10.14333127 * RH -
+      0.22475541 * T * RH -
+      6.83783e-3 * T * T -
+      5.481717e-2 * RH * RH +
+      1.22874e-3 * T * T * RH +
+      8.5282e-4 * T * RH * RH -
+      1.99e-6 * T * T * RH * RH;
+
+    const heatIndexC = ((heatIndexF - 32) * 5) / 9;
+    return heatIndexC.toFixed(2);
+  };
 
   useEffect(() => {
     if (!mapInstance.current) {
@@ -19,16 +77,38 @@ const Search = () => {
           }),
         ],
         view: new View({
-          center: fromLonLat([49.8671, 40.4093]),
+          center: fromLonLat(coordinates),
           zoom: 6,
         }),
       });
     }
-  }, []);
+  }, [coordinates]);
+
+  const handleFilterClick = (filter) => {
+    setSelectedFilter(filter);
+  };
+
+  const getAverageTemperature = () => {
+    switch (selectedFilter) {
+      case "Temperature":
+        return `${weatherData ? weatherData.main.temp.toFixed(1) : 0} °C`;
+      case "Heat Index":
+        return `${calculateHeatIndex(
+          weatherData.main.temp,
+          weatherData.main.humidity
+        )} °C`;
+      case "Wind Speed":
+        return `${weatherData ? weatherData.wind.speed.toFixed(1) : 0} m/s`;
+      case "Humidity":
+        return `${weatherData ? weatherData.main.humidity : 0} %`;
+      default:
+        return "0 °C";
+    }
+  };
 
   return (
     <div className="mx-auto flex">
-      <section style={{ position: 'relative', height: '100vh', width: '70vw' }}>
+      <section style={{ position: "relative", height: "100vh", width: "70vw" }}>
         <div
           ref={mapRef}
           style={{
@@ -61,47 +141,52 @@ const Search = () => {
             zIndex: 2,
           }}
         >
-        </div>
-        <div className='w-full flex justify-center'>
-          <input className='absolute top-0 w-[80%] my-5 py-2 border-2 z-50 border-white rounded-full bg-transparent px-5 text-white' placeholder='Write something to there' type="text" />
-        </div>
-        <div className='absolute z-50 bottom-96 left-60 w-72 h-36  bg-[#D9D9D9] p-2'>
-          <div className='grid grid-cols-3 text-center border-b-2 border-black pb-5'>
-            <div>
-              <h2>Temp.</h2>
-              <p className='text-lg text-[#CB6600]'>84F</p>
-            </div>
-            <div>
-              <h2>Hum.</h2>
-              <p className='text-lg text-[#CB6600]'>28%</p>
-            </div>
-            <div>
-              <h2>Pol.</h2>
-              <p className='text-lg text-[#CB6600]'>60</p>
-            </div>
-          </div>
-          <div className='flex justify-center items-end gap-5 mt-5'>
-            <p>Lat: <span className='font-bold'>4247892</span> </p>
-            <p>Long: <span className='font-bold'>4247892</span></p>
-          </div>
+          <h1>
+            {query ? `Results for "${query}"` : "No search query provided"}
+          </h1>
         </div>
       </section>
-      <section className='px-7 w-[30vw]  bg-[#D9D9D9]'>
-        <div className='py-5 border-b-2 border-black'>
-          <h2 className='mb-10 font-medium text-2xl'>Preview</h2>
-          <p className=' mb-10 text-lg'>Select Sensor Type</p>
-          <ul className='flex justify-start gap-5'>
-            <li className='text-[#CB1900] border border-[#CB1900] rounded-full px-2 py-1'>Temperature</li>
-            <li className=' border border-black  rounded-full px-2 py-1'>Humilidity</li>
-            <li className=' border border-black  rounded-full px-2 py-1'>Pollution</li>
-          </ul>
+      <section className="px-5 w-[30vw] bg-[#D9D9D9]">
+        <div className="title mt-5">
+          <h3 className="text-3xl font-semibold">Preview</h3>
         </div>
-        <div className='mt-5 border-b-2 border-black pb-10'>
-          <h2 className='mb-10 font-medium text-2xl'>Average Temperature</h2>
-          <span>29/05/2024</span>
-          <p className='text-6xl text-[#CB6600] font-medium my-2.5'>84 F</p>
-          <span className='text-sm'>Averege temprature in X</span>
+        <div className="types mt-4">
+          <h4 className="text-xl font-semibold">Select Sensor Type</h4>
+          <div className="filters flex gap-1 mt-3">
+            {["Temperature", "Heat Index", "Wind Speed", "Humidity"].map(
+              (filter) => (
+                <button
+                  key={filter}
+                  className={`bg-[#fff] border border-orange-400 hover:bg-orange-400 font-semibold py-2 px-2 rounded-full ${
+                    selectedFilter === filter ? "bg-orange-400" : ""
+                  }`}
+                  onClick={() => handleFilterClick(filter)}
+                >
+                  {filter}
+                </button>
+              )
+            )}
+          </div>
+          <hr className="mt-5 border-t-2 border-black" />
         </div>
+        <div className="avarage mt-5">
+          <h4 className="text-xl font-semibold">Average {selectedFilter}</h4>
+          <p className="mt-3 font-medium">
+            <span className="text-orange-400">Date:</span> 10/13/2024
+          </p>
+          <div className="result mt-5">
+            <h1 className="text-6xl text-orange-400">
+              {getAverageTemperature()}
+            </h1>
+          </div>
+        </div>
+        {weatherData && (
+          <div className="mt-5 text-black">
+            <h2 className="text-xl font-medium">
+              Location: {weatherData.name}, {weatherData.sys.country}
+            </h2>
+          </div>
+        )}
       </section>
     </div>
   );

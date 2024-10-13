@@ -12,9 +12,11 @@ const Home = () => {
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = () => {
-    console.log(search);
-    navigate("search");
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (search) {
+      navigate(`/search?query=${search}`);
+    }
   };
 
   useEffect(() => {
@@ -77,7 +79,7 @@ const Home = () => {
             onChange={(e) => setSearch(e.target.value)}
             type="text"
             className="w-full h-12 bg-transparent border border-gray-300 rounded-l-lg p-2 focus:outline-none"
-            placeholder="Search Here"
+            placeholder="Enter city name"
           />
           <button className="h-12 bg-purple-500 text-white rounded-r-lg px-4 hover:bg-purple-600 transition-colors duration-200">
             Search
