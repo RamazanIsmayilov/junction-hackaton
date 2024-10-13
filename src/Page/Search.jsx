@@ -29,7 +29,7 @@ const Search = () => {
       const apiKey = "00580b0ee6169bdb85569e16d6e3e7c5";
 
       const geoResponse = await fetch(
-        `http://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${apiKey}`
+        `https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${apiKey}`
       );
       const geoData = await geoResponse.json();
       const { lat, lon } = geoData[0];
